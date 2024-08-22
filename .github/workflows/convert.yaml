@@ -19,7 +19,7 @@ jobs:
       run: sudo apt-get install -y ffmpeg bc
 
     - name: Download video
-      run: wget -O input.mp4 "https://www.webnimbus.cloud/vv.mp4"
+      run: wget -O input.mp4 "https://videos.xivastudio.org/FlavioBriatore.mp4"
 
     - name: Calculate frame information
       id: frame_info
@@ -71,9 +71,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install dependencies
+      run: sudo apt-get install -y ffmpeg bc
+
     - name: Download and combine parts
       run: |
-        sudo apt-get install -y ffmpeg curl
         for i in {1..20}; do
           curl -O ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.run_id }}/part_${i}_output/parte_$i.mp4
         done
