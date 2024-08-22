@@ -1,0 +1,90 @@
+name: Video Processing
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  process-video:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] # Define as partes para processar em paralelo
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt-get install -y ffmpeg bc
+
+    - name: Download video
+      run: wget -O input.mp4 "https://www.webnimbus.cloud/vv.mp4"
+
+    - name: Calculate frame information
+      id: frame_info
+      run: |
+        TOTAL_FRAMES=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames,avg_frame_rate -of default=noprint_wrappers=1:nokey=1 input.mp4 | tail -n1)
+        FRAMERATE=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 input.mp4)
+        FPS=$(echo "scale=2; $FRAMERATE" | bc)
+        FRAMES_POR_PARTE=$(($TOTAL_FRAMES / 20))
+        RESTO=$(($TOTAL_FRAMES % 20))
+
+        echo "TOTAL_FRAMES=$TOTAL_FRAMES" >> $GITHUB_ENV
+        echo "FRAMES_POR_PARTE=$FRAMES_POR_PARTE" >> $GITHUB_ENV
+        echo "RESTO=$RESTO" >> $GITHUB_ENV
+        echo "FPS=$FPS" >> $GITHUB_ENV
+
+    - name: Process part ${{ matrix.part }}
+      run: |
+        if (( ${{ matrix.part }} <= ${{ env.RESTO }} )); then
+          FRAMES_ATUAIS=$((${{ env.FRAMES_POR_PARTE }} + 1))
+        else
+          FRAMES_ATUAIS=${{ env.FRAMES_POR_PARTE }}
+        fi
+
+        DURACAO=$(echo "scale=2; $FRAMES_ATUAIS / ${{ env.FPS }}" | bc)
+        INICIO=0
+        for ((i=1; i<${{ matrix.part }}; i++)); do
+          if (( i <= ${{ env.RESTO }} )); then
+            FRAMES_ATUAIS=$((${{ env.FRAMES_POR_PARTE }} + 1))
+          else
+            FRAMES_ATUAIS=${{ env.FRAMES_POR_PARTE }}
+          fi
+          DURACAO_INICIO=$(echo "scale=2; $FRAMES_ATUAIS / ${{ env.FPS }}" | bc)
+          INICIO=$(echo "scale=2; $INICIO + $DURACAO_INICIO" | bc)
+        done
+
+        ffmpeg -ss "$INICIO" -i input.mp4 -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
+        echo "file 'parte_${{ matrix.part }}.mp4'" >> filelist.txt
+
+    - name: Upload part ${{ matrix.part }} output
+      uses: actions/upload-artifact@v3
+      with:
+        name: part_${{ matrix.part }}_output
+        path: parte_${{ matrix.part }}.mp4
+
+  concat-video:
+    needs: process-video
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Download and combine parts
+      run: |
+        for i in {1..20}; do
+          curl -O ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.run_id }}/part_${i}_output/parte_$i.mp4
+        done
+        for f in parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
+        ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+
+    # - name: Upload final video
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: final_video
+    #     path: final_output.mp4
+
+      ##Tmate ##
+    - name: Setup TMATE Session
+      uses: mxschmitt/action-tmate@v3
