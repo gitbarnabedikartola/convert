@@ -57,11 +57,11 @@ jobs:
           INICIO=$(echo "scale=2; $INICIO + $DURACAO_INICIO" | bc)
         done
 
-        ffmpeg -ss "$INICIO" -i $videoURL -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
+        ffmpeg -ss "$INICIO" -i ${{ env.videoURL }} -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
         echo "file 'parte_${{ matrix.part }}.mp4'" >> filelist.txt
 
-    - name: Setup TMATE Session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup TMATE Session
+    #   uses: mxschmitt/action-tmate@v3
 
     - name: Upload part ${{ matrix.part }} output
       uses: actions/upload-artifact@v4
