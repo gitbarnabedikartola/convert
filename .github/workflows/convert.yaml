@@ -84,12 +84,14 @@ jobs:
       run: |
         cd convert/
         find -name "*.mp4" -exec mv {} . \;
-        # find -type d -exec rm -rf {} +
-        # for f in convert/parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
-        # while [ ! -f "filelist.txt" ]; do
-        #   sleep 1
-        # done
-        # ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+        for dir in */; do
+          rm -rf "$dir"
+        done
+        for f in convert/parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
+        while [ ! -f "filelist.txt" ]; do
+          sleep 1
+        done
+        ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
 
     - name: Setup TMATE Session
       uses: mxschmitt/action-tmate@v3
