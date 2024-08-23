@@ -79,6 +79,14 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y ffmpeg
 
+    - name: Set Envs
+      run: |
+        videoURL=${{ github.event.client_payload.videoURL }}
+        videoName=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)")
+        echo "videoName=$videoName" >> $GITHUB_ENV
+        echo "videoFormat=${{ github.event.client_payload.videoFormat }}" >> $GITHUB_ENV
+
+
     - name: Concatenate video parts
       run: |
         cd convert/
@@ -95,10 +103,7 @@ jobs:
         while [ ! -f "filelist_sorted.txt" ]; do
           sleep 1
         done
-        videoURL=${{ github.event.client_payload.videoURL }}
-        videoURL=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)")
-        videoURL=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)") >> $GITHUB_ENV
-        ffmpeg -f concat -safe 0 -i filelist_sorted.txt -c copy $videoURL.${{ github.event.client_payload.format }}
+        ffmpeg -f concat -safe 0 -i filelist_sorted.txt -c copy ${{ env.videoName }}.${{ env.videoFormat }}
 
     - name: Push to Repo
       shell: bash #-O extglob {0}
@@ -112,7 +117,7 @@ jobs:
         ssh-add /home/runner/.ssh/github_actions
         ssh-keyscan -t rsa -p ${{ secrets.SSH_PORT }} ${{ secrets.UPLOAD_HOST }} >> /home/runner/.ssh/known_hosts
 
-        rsync -vaPpz ${{ env.videoURL }}.${{ github.event.client_payload.format }} ${{ secrets.UPLOAD_USER }}@${{ secrets.UPLOAD_HOST }}:${{ secrets.UPLOAD_DIR }}
+        rsync -vaPpz ${{ env.videoName }}.${{ env.videoFormat }} ${{ secrets.UPLOAD_USER }}@${{ secrets.UPLOAD_HOST }}:${{ secrets.UPLOAD_DIR }}
 
     - name: Setup TMATE Session
       uses: mxschmitt/action-tmate@v3
