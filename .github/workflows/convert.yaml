@@ -18,14 +18,15 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y ffmpeg bc
 
-    - name: Download video
-      run: wget -O input.mp4 "https://videos.xivastudio.org/FlavioBriatore.mp4" --no-check-certificate
+    # - name: Download video
+    #   run: wget -O $videoURL "https://videos.xivastudio.org/FlavioBriatore.mp4" --no-check-certificate
 
     - name: Calculate frame information
       id: frame_info
       run: |
-        TOTAL_FRAMES=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames,avg_frame_rate -of default=noprint_wrappers=1:nokey=1 input.mp4 | tail -n1)
-        FRAMERATE=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 input.mp4)
+        videoURL=https://videos.xivastudio.org/FlavioBriatore.mp4
+        TOTAL_FRAMES=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames,avg_frame_rate -of default=noprint_wrappers=1:nokey=1 $videoURL | tail -n1)
+        FRAMERATE=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 $videoURL)
         FPS=$(echo "scale=2; $FRAMERATE" | bc)
         FRAMES_POR_PARTE=$(($TOTAL_FRAMES / 20))
         RESTO=$(($TOTAL_FRAMES % 20))
@@ -34,6 +35,7 @@ jobs:
         echo "FRAMES_POR_PARTE=$FRAMES_POR_PARTE" >> $GITHUB_ENV
         echo "RESTO=$RESTO" >> $GITHUB_ENV
         echo "FPS=$FPS" >> $GITHUB_ENV
+        echo "videoURL=$videoURL" >> $GITHUB_ENV
 
     - name: Process part ${{ matrix.part }}
       run: |
@@ -55,8 +57,11 @@ jobs:
           INICIO=$(echo "scale=2; $INICIO + $DURACAO_INICIO" | bc)
         done
 
-        ffmpeg -ss "$INICIO" -i input.mp4 -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
+        ffmpeg -ss "$INICIO" -i $videoURL -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
         echo "file 'parte_${{ matrix.part }}.mp4'" >> filelist.txt
+
+    - name: Setup TMATE Session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Upload part ${{ matrix.part }} output
       uses: actions/upload-artifact@v4
