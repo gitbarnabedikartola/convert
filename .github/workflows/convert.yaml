@@ -55,7 +55,6 @@ jobs:
         done
 
         ffmpeg -ss "$INICIO" -i ${{ env.videoURL }} -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
-        echo "file 'parte_${{ matrix.part }}.mp4'" >> filelist.txt
 
         ls -lha
 
@@ -65,7 +64,6 @@ jobs:
         name: part_${{ matrix.part }}
         path: |
           parte_${{ matrix.part }}.mp4
-          filelist.txt
 
   concat-video:
     needs: process-video
@@ -79,12 +77,15 @@ jobs:
       with:
         path: convert/
 
+    - name: Install dependencies
+      run: sudo apt-get install -y ffmpeg bc
+
+    - name: Setup TMATE Session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Concatenate video parts
       run: |
         cd convert/
-        # Combine todos os filelist.txt em um único arquivo
-        cat filelist.txt >> final_filelist.txt
-
         # Concatenar todas as partes do vídeo em um único arquivo final
         ffmpeg -f concat -safe 0 -i final_filelist.txt -c copy final_output.mp4
 
