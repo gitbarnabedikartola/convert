@@ -60,13 +60,15 @@ jobs:
         ffmpeg -ss "$INICIO" -i ${{ env.videoURL }} -t "$DURACAO" -c:v libx264 -c:a aac "parte_${{ matrix.part }}.mp4"
         echo "file 'parte_${{ matrix.part }}.mp4'" >> filelist.txt
 
+        ls -lha
+
     # - name: Setup TMATE Session
     #   uses: mxschmitt/action-tmate@v3
 
     - name: Upload part ${{ matrix.part }} output
       uses: actions/upload-artifact@v4
       with:
-        name: part_${{ matrix.part }}_output
+        name: matrix-artifact
         path: parte_${{ matrix.part }}.mp4
 
   concat-video:
@@ -79,13 +81,19 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y ffmpeg bc
 
-    - name: Download and combine parts
-      run: |
-        for i in {1..20}; do
-          curl -O ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.run_id }}/part_${i}_output/parte_$i.mp4
-        done
-        for f in parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
-        # ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: matrix-artifact
+
+    # - name: Download and combine parts
+    #   run: |
+    #     for i in {1..20}; do
+    #       curl -O ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.run_id }}/part_${i}_output/parte_$i.mp4
+    #       curl -O https://github.com/gitbarnabedikartola/convert/releases/download/10518728326/part_1_output/parte_1.mp4
+    #     done
+    #     for f in parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
+    #     # ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
 
     # - name: Upload final video
     #   uses: actions/upload-artifact@v4
