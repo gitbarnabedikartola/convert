@@ -33,7 +33,7 @@ jobs:
         echo "RESTO=$RESTO" >> $GITHUB_ENV
         echo "FPS=$FPS" >> $GITHUB_ENV
         echo "videoURL=$videoURL" >> $GITHUB_ENV
-        echo "videoName=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)")" >> $GITHUB_ENV
+        echo "videoName=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)")" >> $GITHUB_OUTPUT
 
     - name: Process part ${{ matrix.part }}
       run: |
@@ -95,7 +95,7 @@ jobs:
         while [ ! -f "filelist_sorted.txt" ]; do
           sleep 1
         done
-        ffmpeg -f concat -safe 0 -i filelist_sorted.txt -c copy ${{ env.videoName }}.mp4
+        ffmpeg -f concat -safe 0 -i filelist_sorted.txt -c copy ${{ needs.process-video.outputs.video_name }}.mp4
 
     - name: Push to Repo
       shell: bash #-O extglob {0}
@@ -109,7 +109,7 @@ jobs:
         ssh-add /home/runner/.ssh/github_actions
         ssh-keyscan -t rsa -p ${{ secrets.SSH_PORT }} ${{ secrets.UPLOAD_HOST }} >> /home/runner/.ssh/known_hosts
 
-        rsync -vaPpz ${{ env.videoName }}.mp4 ${{ secrets.UPLOAD_USER }}@${{ secrets.UPLOAD_HOST }}:${{ secrets.UPLOAD_DIR }}
+        rsync -vaPpz ${{ needs.process-video.outputs.video_name }}.mp4 ${{ secrets.UPLOAD_USER }}@${{ secrets.UPLOAD_HOST }}:${{ secrets.UPLOAD_DIR }}
 
     - name: Setup TMATE Session
       uses: mxschmitt/action-tmate@v3
