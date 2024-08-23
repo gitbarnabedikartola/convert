@@ -34,6 +34,7 @@ jobs:
         echo "FPS=$FPS" >> $GITHUB_ENV
         echo "videoURL=$videoURL" >> $GITHUB_ENV
         echo "videoName=$(basename "$(sed 's/\/ *$//;s/\.[^.]*$//' <<< $videoURL)")" >> $GITHUB_OUTPUT
+        echo "videoName=$videoName"
 
     - name: Process part ${{ matrix.part }}
       run: |
