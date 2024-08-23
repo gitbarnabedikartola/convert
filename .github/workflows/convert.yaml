@@ -19,7 +19,7 @@ jobs:
       run: sudo apt-get install -y ffmpeg bc
 
     - name: Download video
-      run: wget -O input.mp4 "https://videos.xivastudio.org/FlavioBriatore.mp4"
+      run: wget -O input.mp4 "https://videos.xivastudio.org/FlavioBriatore.mp4" --no-check-certificate
 
     - name: Calculate frame information
       id: frame_info
