@@ -80,6 +80,9 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install -y ffmpeg
 
+    - name: Setup TMATE Session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Concatenate video parts
       run: |
         cd convert/
@@ -92,9 +95,6 @@ jobs:
           sleep 1
         done
         ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
-
-    - name: Setup TMATE Session
-      uses: mxschmitt/action-tmate@v3
 
     - name: Upload final video
       uses: actions/upload-artifact@v4
