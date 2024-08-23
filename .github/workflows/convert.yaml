@@ -78,13 +78,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: sudo apt-get install -y ffmpeg bc
-
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         name: part_*
+        path: convert/
+
+    - name: Install dependencies
+      run: sudo apt-get install -y ffmpeg bc
 
     # - name: Download and combine parts
     #   run: |
