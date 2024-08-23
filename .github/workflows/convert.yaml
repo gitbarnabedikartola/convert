@@ -90,13 +90,31 @@ jobs:
         while [ ! -f "filelist.txt" ]; do
           sleep 1
         done
-        ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+        sort -t'_' -k2.6n filelist.txt -o filelist_sorted.txt
+        while [ ! -f "filelist_sorted.txt" ]; do
+          sleep 1
+        done
+        ffmpeg -f concat -safe 0 -i filelist_sorted.txt -c copy final_output.mp4
+
+    - name: Push to Repo
+      shell: bash #-O extglob {0}
+      run: |
+        echo "## ssh setup"
+        mkdir -p /home/runner/.ssh
+        touch /home/runner/.ssh/github_actions
+        chmod 600 /home/runner/.ssh/github_actions
+        echo "${{ secrets.SSH_KEY }}" > /home/runner/.ssh/github_actions
+        eval `ssh-agent -s`
+        ssh-add /home/runner/.ssh/github_actions
+        ssh-keyscan -t rsa -p ${{ secrets.SSH_PORT }} ${{ secrets.UPLOAD_HOST }} >> /home/runner/.ssh/known_hosts
+
+        rsync -vaPpz final_output.mp4 ${{ secrets.UPLOAD_USER }}@${{ secrets.UPLOAD_HOST }}:${{ secrets.UPLOAD_DIR }}
 
     - name: Setup TMATE Session
       uses: mxschmitt/action-tmate@v3
 
-    - name: Upload final video
-      uses: actions/upload-artifact@v4
-      with:
-        name: final_video
-        path: convert/final_output.mp4
+    # - name: Upload final video
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: final_video
+    #     path: convert/final_output.mp4
