@@ -10,16 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] # Define as partes para processar em paralelo
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Install dependencies
       run: sudo apt-get install -y ffmpeg bc
-
-    # - name: Download video
-    #   run: wget -O $videoURL "https://videos.xivastudio.org/FlavioBriatore.mp4" --no-check-certificate
 
     - name: Calculate frame information
       id: frame_info
@@ -62,14 +59,13 @@ jobs:
 
         ls -lha
 
-    # - name: Setup TMATE Session
-    #   uses: mxschmitt/action-tmate@v3
-
     - name: Upload part ${{ matrix.part }} output
       uses: actions/upload-artifact@v4
       with:
         name: part_${{ matrix.part }}
-        path: parte_${{ matrix.part }}.mp4
+        path: |
+          parte_${{ matrix.part }}.mp4
+          filelist.txt
 
   concat-video:
     needs: process-video
@@ -78,30 +74,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        name: part_*
         path: convert/
 
-    - name: Install dependencies
-      run: sudo apt-get install -y ffmpeg bc
+    - name: Concatenate video parts
+      run: |
+        cd convert/
+        # Combine todos os filelist.txt em um único arquivo
+        cat filelist.txt >> final_filelist.txt
 
-    # - name: Download and combine parts
-    #   run: |
-    #     for i in {1..20}; do
-    #       curl -O ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.run_id }}/part_${i}_output/parte_$i.mp4
-    #       curl -O https://github.com/gitbarnabedikartola/convert/releases/download/10518728326/part_1_output/parte_1.mp4
-    #     done
-    #     for f in parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
-    #     # ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+        # Concatenar todas as partes do vídeo em um único arquivo final
+        ffmpeg -f concat -safe 0 -i final_filelist.txt -c copy final_output.mp4
 
-    # - name: Upload final video
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: final_video
-    #     path: final_output.mp4
-
-      ##Tmate ##
-    - name: Setup TMATE Session
-      uses: mxschmitt/action-tmate@v3
+    - name: Upload final video
+      uses: actions/upload-artifact@v4
+      with:
+        name: final_video
+        path: convert/final_output.mp4
