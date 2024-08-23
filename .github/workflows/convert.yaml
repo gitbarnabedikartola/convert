@@ -78,16 +78,21 @@ jobs:
         path: convert/
 
     - name: Install dependencies
-      run: sudo apt-get install -y ffmpeg bc
-
-    - name: Setup TMATE Session
-      uses: mxschmitt/action-tmate@v3
+      run: sudo apt-get install -y ffmpeg
 
     - name: Concatenate video parts
       run: |
         cd convert/
-        # Concatenar todas as partes do vídeo em um único arquivo final
-        ffmpeg -f concat -safe 0 -i final_filelist.txt -c copy final_output.mp4
+        find -name "*.mp4" -exec mv {} . \;
+        find -type d -exec rm -r {} \;
+        for f in convert/parte_*.mp4; do echo "file '$f'" >> filelist.txt; done
+        while [ ! -f "filelist.txt" ]; do
+          sleep 1
+        done
+        ffmpeg -f concat -safe 0 -i filelist.txt -c copy final_output.mp4
+
+    - name: Setup TMATE Session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Upload final video
       uses: actions/upload-artifact@v4
